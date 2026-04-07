@@ -63,6 +63,7 @@ void changeTroughByDepth(struct Trough *troughs, int n, double depth) {
 int main()
 {
     setlocale(LC_ALL, "Russian");
+    system("chcp 1251");
     
     struct Trough troughs[20] = {
         {"Марианская", 11034.0, Pacific, Gutter},
