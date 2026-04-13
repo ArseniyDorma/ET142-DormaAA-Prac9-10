@@ -2,8 +2,11 @@
 //
 
 #include <iostream>
+#include <fstream>
 
-enum Ocean{
+using namespace std;
+
+enum Ocean {
     Pacific,
     Atlantic,
     Indian,
@@ -11,10 +14,10 @@ enum Ocean{
 };
 
 enum TroughType {
-    Fault,    
-    Ridge,     
-    Gutter,    
-    Basin      
+    Fault,
+    Ridge,
+    Gutter,
+    Basin
 };
 
 struct Trough {
@@ -24,7 +27,55 @@ struct Trough {
     TroughType type;
 };
 
-void changeTroughByDepth(struct Trough *troughs, int n, double depth) {
+const char* getTypeName(TroughType type) {
+    switch (type) {
+    case Fault: return "Разломной";
+    case Ridge: return "Хребетом";
+    case Gutter: return "Жёлобом";
+    case Basin: return "Котловиной";
+    default: return "Неизвестной";
+    }
+}
+
+const char* getOceanName(Ocean ocean) {
+    switch (ocean) {
+    case Pacific: return "Тихом";
+    case Atlantic: return "Атлантическом";
+    case Indian: return "Индийском";
+    case North: return "Северном-Ледовитом";
+    default: return "Неизвестном";
+    }
+}
+
+void writeTroughsToBinaryFile(const char* filename, const Trough* troughs, int count) {
+    ofstream out(filename, ios::binary | ios::out);
+
+    if (!out.is_open()) {
+        cerr << "Ошибка! Не удалось открыть файл для записи: " << filename << endl;
+        return;
+    }
+
+    out.write((char*)troughs, sizeof(Trough) * count);
+
+    out.close();
+    cout << "Массив структур успешно записан в двоичный файл: " << filename << endl;
+}
+
+void readTroughsFromBinaryFile(const char* filename, Trough* troughs, int count) {
+    ifstream in(filename, ios::binary | ios::in);
+
+    if (!in.is_open()) {
+        cerr << "Ошибка! Не удалось открыть файл для чтения: " << filename << endl;
+        return;
+    }
+
+    in.read((char*)troughs, sizeof(Trough) * count);
+
+    in.close();
+    cout << "Массив структур успешно загружен из двоичного файла: " << filename << endl;
+}
+
+void changeTroughByDepth(struct Trough* troughs, int n, double depth) {
     for (int i = 0; i < n; i++) {
         if (troughs[i].depth == depth) {
             printf("Найдена впадина: %s \n", troughs[i].name);
@@ -40,21 +91,9 @@ void changeTroughByDepth(struct Trough *troughs, int n, double depth) {
             printf("Введите новый тип(0 - Разломная, 1 - Хребет, 2 - Жёлоб, 3 - Котловина): ");
             scanf_s("%i", &t);
             troughs[i].type = (enum TroughType)t;
-            const char* oceanName = "";
-            const char* typeName = "";
-            switch (troughs[i].type) {
-                case Fault: typeName = "Разломная"; break;
-                case Ridge: typeName = "Хребет"; break;
-                case Gutter: typeName = "Жёлоб"; break;
-                case Basin: typeName = "Котловина"; break;
-            }
-            switch (troughs[i].ocean) {
-                case Pacific: oceanName = "Тихий"; break;
-                case Atlantic: oceanName = "Атлантический"; break;
-                case North: oceanName = "Северный-Ледовитый"; break;
-                case Indian: oceanName = "Индийский"; break;
-            }
-            printf("Успешно! Новая информация: \nНазвание: %s впадина \nГлубина: %.2f \nМестоположение: %s океан \nТип: %s", 
+            const char* oceanName = getOceanName(troughs[i].ocean);
+            const char* typeName = getTypeName(troughs[i].type);
+            printf("Успешно! Новая информация: \nНазвание: %s впадина \nГлубина: %.2f \nМестоположение: %s океан \nТип: %s",
                 troughs[i].name, troughs[i].depth, oceanName, typeName);
         }
     }
@@ -64,29 +103,15 @@ int main()
 {
     setlocale(LC_ALL, "Russian");
     system("chcp 1251");
-    
-    struct Trough troughs[20] = {
-        {"Марианская", 11034.0, Pacific, Gutter},
-        {"Тонгская", 10882.0, Pacific, Gutter},
-        {"Филиппинская", 10540.0, Pacific, Gutter},
-        {"Курило-Камчатская", 10542.0, Pacific, Gutter},
-        {"Кермадекская", 10047.0, Pacific, Gutter},
-        {"Идзу-Огасаварская", 9810.0, Pacific, Gutter},
-        {"Пуэрто-Риканская", 8648.0, Atlantic, Gutter},
-        {"Южно-Сандвичева", 8428.0, Atlantic, Gutter},
-        {"Перуанско-Чилийская", 8065.0, Pacific, Gutter},
-        {"Яванская", 7725.0, Indian, Gutter},
-        {"Алеутская", 7679.0, Pacific, Gutter},
-        {"Романшская", 7760.0, Atlantic, Gutter},
-        {"Моллойская", 5669.0, North, Gutter},
-        {"Литкенская", 5449.0, North, Gutter},
-        {"Срединно-Атлантическая", 3000.0, Atlantic, Ridge},
-        {"Восточно-Тихоокеанская", 2500.0, Pacific, Ridge},
-        {"Аравийско-Индийская", 4000.0, Indian, Ridge},
-        {"Сомалийская", 5400.0, Indian, Basin},
-        {"Канадская", 3800.0, North, Basin},
-        {"Агадирская", 4500.0, Atlantic, Basin}
-    };
+
+    const char* filename = "troughs_data.txt";
+    struct Trough troughs[20];
+
+    cout << "\nЧтение из файла..." << endl;
+
+    readTroughsFromBinaryFile(filename, troughs, 20);
+
+    cout << "\n";
 
     double minDepth = troughs[0].depth;
     double maxDepth = troughs[0].depth;
@@ -94,12 +119,12 @@ int main()
 
     struct Trough gutters[20];
     int gutterCount = 0;
-    
+
     struct Trough sorted[20];
 
     int oceanChoice;
     printf("Выберите океан(0 - Тихий, 1 - Атлантический, 2 - Индийский, 3 - Северный-Ледовитый): ");
-    scanf_s("%i",&oceanChoice);
+    scanf_s("%i", &oceanChoice);
 
     struct Trough sameOcean[20];
     int sameOceanCount = 0;
@@ -109,7 +134,7 @@ int main()
             minDepth = troughs[i].depth;
             minId = i;
         }
-            
+
         if (troughs[i].depth > maxDepth) {
             maxDepth = troughs[i].depth;
             maxId = i;
@@ -143,13 +168,7 @@ int main()
     }
     else {
         for (int i = 0; i < sameOceanCount; i++) {
-            const char* typeName = "";
-            switch (sameOcean[i].type) {
-                case Fault: typeName = "Разломной"; break;
-                case Ridge: typeName = "Хребетом"; break;
-                case Gutter: typeName = "Жёлобом"; break;
-                case Basin: typeName = "Котловиной"; break;
-            }
+            const char* typeName = getTypeName(sameOcean[i].type);
 
             printf("%i. %s впадина, которая является %s и имеет глубину %.2f \n", i + 1, sameOcean[i].name, typeName, sameOcean[i].depth);
         }
@@ -172,18 +191,12 @@ int main()
     }
 
     for (int i = 0; i < gutterCount; i++) {
-        printf("%i. %s впадина. Глубина: %.2f \n",i+1,gutters[i].name,gutters[i].depth);
+        printf("%i. %s впадина, которая является %s. Глубина: %.2f \n", i + 1, gutters[i].name, getTypeName(gutters[i].type), gutters[i].depth);
     }
     printf("\n");
 
     for (int i = 0; i < 3; i++) {
-        const char *oceanName = ""; 
-        switch (sorted[i].ocean) {
-            case Pacific: oceanName = "Тихом"; break;
-            case Atlantic: oceanName = "Атлантическом"; break;
-            case North: oceanName = "Северном-Ледовитом"; break;
-            case Indian: oceanName = "Индийском"; break;
-        }
+        const char* oceanName = getOceanName(sorted[i].ocean);
 
         printf("%i. %s впадина имеет глубину %.2f и находится в %s океане \n", i + 1, sorted[i].name, sorted[i].depth, oceanName);
     }
@@ -194,6 +207,13 @@ int main()
     scanf_s("%lf", &depthToChange);
     changeTroughByDepth(troughs, 20, depthToChange);
 
+    cout << "\n";
+
+    cout << "\nЗапись в файл..." << endl;
+
+    writeTroughsToBinaryFile(filename, troughs, 20);
+
+    return 0;
 }
 
 // Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
